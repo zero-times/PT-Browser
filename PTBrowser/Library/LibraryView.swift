@@ -17,6 +17,7 @@ struct LibraryView: View {
     @State private var selectionMode = false
     @State private var selected = Set<String>()
     @State private var viewer: ViewerSelection?
+    @StateObject private var viewerPlayback = PlaybackModel()
     @State private var editing: MediaItem?
     @State private var editedName = ""
     @State private var moving: [MediaItem] = []
@@ -86,7 +87,7 @@ struct LibraryView: View {
             }
             .sheet(isPresented: $pickingFolder) { FolderPicker { url in Task { await library.selectFolder(url); folder = "" } } }
             .sheet(isPresented: $vaultSheet) { VaultSheet() }
-            .fullScreenCover(item: $viewer) { selection in MediaViewer(items: selection.items, startingID: selection.id).environmentObject(library) }
+            .fullScreenCover(item: $viewer, onDismiss: { viewerPlayback.stop() }) { selection in MediaViewer(items: selection.items, startingID: selection.id, playback: viewerPlayback).environmentObject(library) }
             .sheet(isPresented: $sharing) { ShareSheet(urls: shareURLs) }
             .sheet(isPresented: Binding(get: { !moving.isEmpty }, set: { if !$0 { moving = [] } })) { moveSheet }
             .alert("新建文件夹", isPresented: $newFolder) {
@@ -105,7 +106,7 @@ struct LibraryView: View {
             } message: { Text("文件将从所选 Files 文件夹中删除，此操作无法撤销。") }
             .alert("文件校验", isPresented: Binding(get: { detail != nil }, set: { if !$0 { detail = nil } })) { Button("好") { detail = nil } } message: { Text(detail ?? "") }
             .onChange(of: scope) { _, _ in selected.removeAll(); folder = "" }
-            .onChange(of: library.generation) { _, _ in viewer = nil; selected.removeAll(); shareURLs = []; sharing = false; detail = nil; editing = nil; moving = []; deleting = [] }
+            .onChange(of: library.generation) { _, _ in viewerPlayback.stop(); viewer = nil; selected.removeAll(); shareURLs = []; sharing = false; detail = nil; editing = nil; moving = []; deleting = [] }
         }
     }
 

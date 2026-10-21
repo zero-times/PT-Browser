@@ -7,15 +7,20 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1BE02B53264D7EE5DAA804F4 /* PlaybackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B497C253AE46A0AB853BE4B /* PlaybackTests.swift */; };
 		1D5735E4AB3E1345A4A91094 /* Thumbnail.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0741587C686DC6FC6718C7F /* Thumbnail.swift */; };
 		28D0DC36A903045CE57D8E06 /* PTBrowserApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA5006B8C0E4A327A54E4C9D /* PTBrowserApp.swift */; };
 		2C9930C292FAF9F244092B4D /* BrowserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D338F0E6E1B2B7198F7A7C7A /* BrowserTests.swift */; };
 		2DBC75B65A7ECFD399393911 /* DownloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5B439F0F38E835CD6DD6A1B /* DownloadTests.swift */; };
 		39FDA14F787D35975F7BF0E2 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A17FE2EBA59A59DF36A0619 /* SettingsView.swift */; };
+		3C7C9E0B66E8CF73BE605863 /* MediaViewerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D16E4C905B0241C49510FB4 /* MediaViewerUITests.swift */; };
 		46900C3225FF82EDD23C5318 /* DownloadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61F39E2D1D2A02CA4AB6C861 /* DownloadsView.swift */; };
+		53F577DC68E6213D6AF78CB6 /* DownloadHistoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6AFEE4ACE67C0351DD24772 /* DownloadHistoryTests.swift */; };
 		584B2CDA8CCEDF115792BDAE /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 125C39FEB06DD94A496778D1 /* LibraryView.swift */; };
+		5D9E305F53035002B7DB7CAC /* ContinuousImageReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E26D3C081EDE4E8DB202B0 /* ContinuousImageReader.swift */; };
 		60D57C5B0E3C127B4953E90B /* MediaNamingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01951B056C421F33CD99F7DF /* MediaNamingTests.swift */; };
 		646A30D7C4D4534555CEF46B /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BE9BEB32304F42B902021DC /* BrowserView.swift */; };
+		6AF97A8F45F54680794CB669 /* UITestMediaFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C95D61E9472FC24C264A230 /* UITestMediaFixtures.swift */; };
 		7D0AD790630EAF0C59FA01A8 /* BrowserModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FE80EF10442455E8E025986 /* BrowserModel.swift */; };
 		819F27C1F1B33F6E610A2584 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EA97DDCFA61BC494F7112814 /* Assets.xcassets */; };
 		830ED441B88978B0499E0A66 /* VaultCryptoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F817BB9017AB3DF1D369974 /* VaultCryptoTests.swift */; };
@@ -26,6 +31,7 @@
 		C0C2CB0FF007F2D90EF18DFE /* LibraryRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957AEA22444C3698790DD157 /* LibraryRepositoryTests.swift */; };
 		C42FF3D30928335C8DC17C11 /* LibraryPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BB714C9AF04FC2500DD243D /* LibraryPaths.swift */; };
 		D442A15B6830F4AF00AA0E39 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59BD4C433271F76F26A93C /* Models.swift */; };
+		DDA6F1B86D30D01363073E02 /* Fullscreen-Test.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 50B56025827EED970AEB81B3 /* Fullscreen-Test.mp4 */; };
 		E29EAD21EF4BA91ED22AEF12 /* Playback-Test.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = 817E51889381444905434BB5 /* Playback-Test.mp4 */; };
 		E464030128961B9679DDDA55 /* MediaNaming.swift in Sources */ = {isa = PBXBuildFile; fileRef = D47D59C3AD5041A627B90752 /* MediaNaming.swift */; };
 		E7171365A9F7CD75FDF330B8 /* LibraryRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C86065A3E00E5C2AFA97B0 /* LibraryRepository.swift */; };
@@ -55,17 +61,21 @@
 		01951B056C421F33CD99F7DF /* MediaNamingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaNamingTests.swift; sourceTree = "<group>"; };
 		049DDCCEAFB3189372B797D9 /* VaultCrypto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultCrypto.swift; sourceTree = "<group>"; };
 		06F64E81CC4F3747C8CD59C8 /* MediaViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaViewer.swift; sourceTree = "<group>"; };
+		0D16E4C905B0241C49510FB4 /* MediaViewerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaViewerUITests.swift; sourceTree = "<group>"; };
 		0F817BB9017AB3DF1D369974 /* VaultCryptoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultCryptoTests.swift; sourceTree = "<group>"; };
 		0FE80EF10442455E8E025986 /* BrowserModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserModel.swift; sourceTree = "<group>"; };
 		125C39FEB06DD94A496778D1 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		1D83DCE3927C57A5A2F92895 /* PTBrowserTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PTBrowserTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B497C253AE46A0AB853BE4B /* PlaybackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackTests.swift; sourceTree = "<group>"; };
 		30C86065A3E00E5C2AFA97B0 /* LibraryRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryRepository.swift; sourceTree = "<group>"; };
 		3677D4FCCC70757105F3F43C /* LibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryStore.swift; sourceTree = "<group>"; };
 		39B255ED1D7C1C8FE3211DE8 /* DownloadCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadCenter.swift; sourceTree = "<group>"; };
 		3BB714C9AF04FC2500DD243D /* LibraryPaths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryPaths.swift; sourceTree = "<group>"; };
+		50B56025827EED970AEB81B3 /* Fullscreen-Test.mp4 */ = {isa = PBXFileReference; path = "Fullscreen-Test.mp4"; sourceTree = "<group>"; };
 		61F39E2D1D2A02CA4AB6C861 /* DownloadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadsView.swift; sourceTree = "<group>"; };
 		6BE9BEB32304F42B902021DC /* BrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserView.swift; sourceTree = "<group>"; };
 		7B6E3115FEF5E34A8A16E24E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		7C95D61E9472FC24C264A230 /* UITestMediaFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestMediaFixtures.swift; sourceTree = "<group>"; };
 		7D59BD4C433271F76F26A93C /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		817E51889381444905434BB5 /* Playback-Test.mp4 */ = {isa = PBXFileReference; path = "Playback-Test.mp4"; sourceTree = "<group>"; };
 		957AEA22444C3698790DD157 /* LibraryRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryRepositoryTests.swift; sourceTree = "<group>"; };
@@ -73,10 +83,12 @@
 		A747D14E209F9E13E16B9462 /* PTBrowserUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PTBrowserUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B0741587C686DC6FC6718C7F /* Thumbnail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Thumbnail.swift; sourceTree = "<group>"; };
 		B667E20CF50C976EAA3263F1 /* AppUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUITests.swift; sourceTree = "<group>"; };
+		B6AFEE4ACE67C0351DD24772 /* DownloadHistoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadHistoryTests.swift; sourceTree = "<group>"; };
 		D338F0E6E1B2B7198F7A7C7A /* BrowserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserTests.swift; sourceTree = "<group>"; };
 		D47D59C3AD5041A627B90752 /* MediaNaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaNaming.swift; sourceTree = "<group>"; };
 		D518625C63783D650C8A4D9E /* MediaSniffer.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = MediaSniffer.js; sourceTree = "<group>"; };
 		E5B439F0F38E835CD6DD6A1B /* DownloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadTests.swift; sourceTree = "<group>"; };
+		E5E26D3C081EDE4E8DB202B0 /* ContinuousImageReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousImageReader.swift; sourceTree = "<group>"; };
 		EA97DDCFA61BC494F7112814 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		FA5006B8C0E4A327A54E4C9D /* PTBrowserApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PTBrowserApp.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -108,6 +120,8 @@
 			isa = PBXGroup;
 			children = (
 				B667E20CF50C976EAA3263F1 /* AppUITests.swift */,
+				0D16E4C905B0241C49510FB4 /* MediaViewerUITests.swift */,
+				D1CCFA4CD6F40A83472BF1E0 /* Fixtures */,
 			);
 			path = PTBrowserUITests;
 			sourceTree = "<group>";
@@ -115,6 +129,7 @@
 		1B5EC07A34037DB66053000D /* Player */ = {
 			isa = PBXGroup;
 			children = (
+				E5E26D3C081EDE4E8DB202B0 /* ContinuousImageReader.swift */,
 				06F64E81CC4F3747C8CD59C8 /* MediaViewer.swift */,
 			);
 			path = Player;
@@ -151,9 +166,11 @@
 			isa = PBXGroup;
 			children = (
 				D338F0E6E1B2B7198F7A7C7A /* BrowserTests.swift */,
+				B6AFEE4ACE67C0351DD24772 /* DownloadHistoryTests.swift */,
 				E5B439F0F38E835CD6DD6A1B /* DownloadTests.swift */,
 				957AEA22444C3698790DD157 /* LibraryRepositoryTests.swift */,
 				01951B056C421F33CD99F7DF /* MediaNamingTests.swift */,
+				2B497C253AE46A0AB853BE4B /* PlaybackTests.swift */,
 				0F817BB9017AB3DF1D369974 /* VaultCryptoTests.swift */,
 				068CBDE9A968F5E68F56C22D /* Fixtures */,
 			);
@@ -169,6 +186,7 @@
 				D47D59C3AD5041A627B90752 /* MediaNaming.swift */,
 				7D59BD4C433271F76F26A93C /* Models.swift */,
 				B0741587C686DC6FC6718C7F /* Thumbnail.swift */,
+				7C95D61E9472FC24C264A230 /* UITestMediaFixtures.swift */,
 				049DDCCEAFB3189372B797D9 /* VaultCrypto.swift */,
 			);
 			path = Core;
@@ -204,6 +222,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		D1CCFA4CD6F40A83472BF1E0 /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				50B56025827EED970AEB81B3 /* Fullscreen-Test.mp4 */,
+			);
+			path = Fixtures;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -212,6 +238,7 @@
 			buildConfigurationList = EE19B4B1ABFEC1C6C6C7D681 /* Build configuration list for PBXNativeTarget "PTBrowserUITests" */;
 			buildPhases = (
 				8009A88BDD0F3232E1D765C1 /* Sources */,
+				E64C7747E8F0851833E98063 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -325,6 +352,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E64C7747E8F0851833E98063 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DDA6F1B86D30D01363073E02 /* Fullscreen-Test.mp4 in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -334,6 +369,7 @@
 			files = (
 				7D0AD790630EAF0C59FA01A8 /* BrowserModel.swift in Sources */,
 				646A30D7C4D4534555CEF46B /* BrowserView.swift in Sources */,
+				5D9E305F53035002B7DB7CAC /* ContinuousImageReader.swift in Sources */,
 				B86C9547B54CECFF47C12BD8 /* DownloadCenter.swift in Sources */,
 				46900C3225FF82EDD23C5318 /* DownloadsView.swift in Sources */,
 				C42FF3D30928335C8DC17C11 /* LibraryPaths.swift in Sources */,
@@ -346,6 +382,7 @@
 				28D0DC36A903045CE57D8E06 /* PTBrowserApp.swift in Sources */,
 				39FDA14F787D35975F7BF0E2 /* SettingsView.swift in Sources */,
 				1D5735E4AB3E1345A4A91094 /* Thumbnail.swift in Sources */,
+				6AF97A8F45F54680794CB669 /* UITestMediaFixtures.swift in Sources */,
 				E9CBC83E2A791C19A128DA39 /* VaultCrypto.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -355,6 +392,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				929F0F4AE39B964CE1A5054F /* AppUITests.swift in Sources */,
+				3C7C9E0B66E8CF73BE605863 /* MediaViewerUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -363,9 +401,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				2C9930C292FAF9F244092B4D /* BrowserTests.swift in Sources */,
+				53F577DC68E6213D6AF78CB6 /* DownloadHistoryTests.swift in Sources */,
 				2DBC75B65A7ECFD399393911 /* DownloadTests.swift in Sources */,
 				C0C2CB0FF007F2D90EF18DFE /* LibraryRepositoryTests.swift in Sources */,
 				60D57C5B0E3C127B4953E90B /* MediaNamingTests.swift in Sources */,
+				1BE02B53264D7EE5DAA804F4 /* PlaybackTests.swift in Sources */,
 				830ED441B88978B0499E0A66 /* VaultCryptoTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -473,7 +513,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 96P5S5A5C3;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -489,7 +529,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = PTBrowser/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hoai.ptbrowser;
@@ -539,7 +579,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 96P5S5A5C3;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -561,7 +601,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = PTBrowser/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0.2;
+				MARKETING_VERSION = 1.0.3;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;

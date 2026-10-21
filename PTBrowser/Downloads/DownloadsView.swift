@@ -15,6 +15,8 @@ struct DownloadsView: View {
                         Text("每一份收藏，都有迹可循。").font(.title2.bold())
                         Text("下载、校验、保存到 Files。\n完成后前往媒体库浏览或加密隐藏。")
                             .font(.subheadline).foregroundStyle(.secondary)
+                        Text("清理记录会保留下载中的任务和已保存的媒体。")
+                            .font(.caption).foregroundStyle(.secondary)
                     }.padding(.vertical, 12)
                 }
                 if downloads.jobs.isEmpty { ContentUnavailableView("下载队列是空的", systemImage: "arrow.down.to.line", description: Text("从浏览器嗅探媒体，或添加一个直接下载地址。")) }
@@ -43,7 +45,13 @@ struct DownloadsView: View {
                     }.padding(.vertical, 8)
                 }
             }.navigationTitle("下载")
-                .toolbar { ToolbarItem(placement: .primaryAction) { Button { adding = true } label: { Image(systemName: "plus") }.accessibilityLabel("添加下载") } }
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("清理记录") { downloads.clearHistory(); detail = nil }
+                            .disabled(!downloads.canClearHistory).accessibilityIdentifier("clearDownloadHistory")
+                    }
+                    ToolbarItem(placement: .primaryAction) { Button { adding = true } label: { Image(systemName: "plus") }.accessibilityLabel("添加下载") }
+                }
                 .sheet(isPresented: $adding) { addSheet }
                 .alert("SHA-256", isPresented: Binding(get: { detail != nil }, set: { if !$0 { detail = nil } })) { Button("复制") { UIPasteboard.general.string = detail; detail = nil }; Button("好", role: .cancel) { detail = nil } } message: { Text(detail ?? "") }
         }

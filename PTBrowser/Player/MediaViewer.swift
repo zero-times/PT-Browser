@@ -8,6 +8,8 @@ struct MediaViewer: View {
     @Environment(\.scenePhase) private var scenePhase
     let items: [MediaItem]
     let startingID: String
+    @ObservedObject var playback: PlaybackModel
+    @State private var readingRequest: ImageReadingRequest?
     @State private var currentID: String?
     @State private var vertical = false
     @State private var longImage = false
@@ -18,13 +20,13 @@ struct MediaViewer: View {
     @State private var rate: Float = 1
     @State private var muted = false
     @State private var showInfo = false
-    private var visibleItems: [MediaItem] { shortVideos ? items.filter { $0.kind == .video } : items }
+    private var visibleItems: [MediaItem] { shortVideos ? items.filter { $0.kind == .video } : longImage ? items.filter { $0.kind == .image } : items }
     private var current: MediaItem? { visibleItems.first { $0.id == currentID } }
     private var index: Int { visibleItems.firstIndex { $0.id == currentID } ?? 0 }
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button { dismiss() } label: { Image(systemName: "xmark").frame(width: 44, height: 44) }.accessibilityLabel("关闭浏览")
+                Button { playback.stop(); dismiss() } label: { Image(systemName: "xmark").frame(width: 44, height: 44) }.accessibilityLabel("关闭浏览")
                 Spacer()
                 VStack(spacing: 2) {
                     Text(current?.name ?? "媒体浏览").font(.subheadline.weight(.medium)).lineLimit(1)
@@ -33,7 +35,7 @@ struct MediaViewer: View {
                 Spacer()
                 Menu {
                     Toggle("上下滑动切换", isOn: $vertical)
-                    Toggle("长图纵向阅读", isOn: $longImage).disabled(current?.kind != .image)
+                    Toggle("长图纵向阅读", isOn: $longImage).accessibilityIdentifier("continuousReadingToggle").disabled(current?.kind != .image)
                     Toggle("短视频模式", isOn: $shortVideos)
                     Toggle("自动播放下一项", isOn: $autoNext)
                     Toggle("静音", isOn: $muted)
@@ -42,14 +44,16 @@ struct MediaViewer: View {
                 } label: { Image(systemName: "ellipsis.circle").frame(width: 44, height: 44) }.accessibilityLabel("浏览设置")
             }.padding(.horizontal, 8).background(.bar)
             GeometryReader { geometry in
-                if vertical {
+                if longImage {
+                    ContinuousImageReader(items: visibleItems, startID: currentID ?? startingID, currentID: $currentID, request: readingRequest)
+                } else if vertical {
                     ScrollView(.vertical) {
                         LazyVStack(spacing: 0) {
                             ForEach(visibleItems) { item in
                                 page(item).frame(width: geometry.size.width, height: geometry.size.height).id(item.id)
                             }
                         }.scrollTargetLayout()
-                    }.scrollTargetBehavior(.paging).scrollPosition(id: $currentID).scrollIndicators(.hidden)
+                    }.scrollTargetBehavior(.paging).scrollPosition(id: pagingPosition).scrollIndicators(.hidden)
                 } else {
                     ScrollView(.horizontal) {
                         LazyHStack(spacing: 0) {
@@ -57,13 +61,15 @@ struct MediaViewer: View {
                                 page(item).frame(width: geometry.size.width, height: geometry.size.height).id(item.id)
                             }
                         }.scrollTargetLayout()
-                    }.scrollTargetBehavior(.paging).scrollPosition(id: $currentID).scrollIndicators(.hidden)
+                    }.scrollTargetBehavior(.paging).scrollPosition(id: pagingPosition).scrollIndicators(.hidden)
                 }
             }.background(.black)
             HStack(spacing: 12) {
                 Button { advance(-1) } label: { Image(systemName: "backward.end").frame(width: 44, height: 44) }.disabled(index == 0).accessibilityLabel("上一项")
                 Spacer()
-                if current?.kind == .image {
+                if longImage {
+                    Text("连续阅读 · 向下查看更多图片").font(.caption).foregroundStyle(.secondary)
+                } else if current?.kind == .image {
                     Button { slideshow.toggle() } label: { Label(slideshow ? "暂停幻灯片" : "幻灯片", systemImage: slideshow ? "pause.fill" : "play.fill") }.frame(minHeight: 44)
                     Menu { Picker("间隔", selection: $slideshowSeconds) { Text("2 秒").tag(2.0); Text("4 秒").tag(4.0); Text("8 秒").tag(8.0) } } label: { Text("\(Int(slideshowSeconds))s").font(.caption).frame(minWidth: 44, minHeight: 44) }
                 } else { Text(shortVideos ? "上下滑动 · 连续播放" : "\(rate.formatted())× · \(autoNext ? "自动下一项" : "单项播放")").font(.caption).foregroundStyle(.secondary) }
@@ -72,13 +78,21 @@ struct MediaViewer: View {
             }.padding(.horizontal, 16).background(.bar)
         }
         .background(.black).preferredColorScheme(.dark)
-        .onAppear { currentID = startingID }
+        .onAppear { if currentID == nil { currentID = startingID } }
+        .onChange(of: longImage) { _, enabled in
+            if enabled { shortVideos = false; slideshow = false; playback.stop() }
+            if !visibleItems.contains(where: { $0.id == currentID }) { currentID = visibleItems.first?.id }
+        }
         .onChange(of: shortVideos) { _, enabled in
             if enabled { vertical = true; longImage = false; slideshow = false }
             if !visibleItems.contains(where: { $0.id == currentID }) { currentID = visibleItems.first?.id }
         }
         .onChange(of: scenePhase) { _, phase in if phase != .active { slideshow = false } }
-        .onChange(of: currentID) { _, _ in showInfo = false }
+        .onChange(of: currentID) { _, value in
+            showInfo = false
+            if playback.mediaID != value { playback.stop() }
+        }
+        .onChange(of: library.generation) { _, _ in playback.stop() }
         .task(id: "\(slideshow)-\(slideshowSeconds)-\(currentID ?? "")") {
             guard slideshow, current?.kind == .image else { return }
             try? await Task.sleep(for: .seconds(slideshowSeconds))
@@ -88,12 +102,25 @@ struct MediaViewer: View {
         .alert("媒体信息", isPresented: $showInfo) { Button("好", role: .cancel) {} } message: { Text("\(current?.name ?? "")\n\(current?.byteLabel ?? "")\n\(current?.isEncrypted == true ? "AES-256-GCM 加密媒体" : "Files 普通媒体")\n\(current?.sha256 ?? "")") }
     }
     private func page(_ item: MediaItem) -> some View {
-        MediaPage(item: item, active: item.id == currentID, longImage: longImage, rate: rate, muted: muted) {
+        MediaPage(item: item, active: item.id == currentID, rate: rate, muted: muted, playback: playback) {
             guard item.id == currentID else { return }
             if autoNext && index < visibleItems.count - 1 { advance(1) }
         }
     }
-    private func advance(_ offset: Int) { let target = index + offset; guard visibleItems.indices.contains(target) else { return }; withAnimation { currentID = visibleItems[target].id } }
+    private var pagingPosition: Binding<String?> {
+        Binding(get: { currentID }, set: { value in
+            // Native fullscreen/rotation can temporarily change the underlying scroll viewport.
+            guard let value, !playback.isFullScreen else { return }
+            currentID = value
+        })
+    }
+    private func advance(_ offset: Int) {
+        let target = index + offset
+        guard visibleItems.indices.contains(target) else { return }
+        let id = visibleItems[target].id
+        if longImage { readingRequest = ImageReadingRequest(target: id) }
+        else { withAnimation { currentID = id } }
+    }
 }
 
 private struct MediaPage: View {
@@ -101,49 +128,68 @@ private struct MediaPage: View {
     @Environment(\.scenePhase) private var scenePhase
     let item: MediaItem
     let active: Bool
-    let longImage: Bool
     let rate: Float
     let muted: Bool
+    @ObservedObject var playback: PlaybackModel
     let ended: @MainActor @Sendable () -> Void
     @State private var url: URL?
     @State private var error: String?
-    @StateObject private var playback = PlaybackModel()
     var body: some View {
         ZStack {
             Color.black
             if let error = error ?? playback.error { ContentUnavailableView("无法打开媒体", systemImage: "exclamationmark.triangle", description: Text(error)) }
             else if let url, active {
-                if item.kind == .image { ZoomableImage(url: url, longMode: longImage) }
-                else { NativePlayer(player: playback.player, allowBackground: !item.isEncrypted) }
+                if item.kind == .image { ZoomableImage(url: url, longMode: false) }
+                else { NativePlayer(playback: playback, allowBackground: !item.isEncrypted) }
             } else if active { ProgressView("正在读取并校验…").tint(.white) }
         }
         .task(id: "\(active)-\(library.generation)") {
-            guard active else { url = nil; playback.stop(); return }
+            guard active else { url = nil; return }
             do {
                 let resolved = try await library.repository.playableURL(item)
                 guard !Task.isCancelled, active, (!item.isEncrypted || !library.privacyCovered) else { return }
+                error = nil
                 url = resolved
                 if item.kind != .image { playback.open(resolved, item: item, rate: rate, muted: muted, ended: ended) }
             } catch { if !Task.isCancelled { self.error = error.localizedDescription } }
         }
         .onChange(of: rate) { _, value in playback.setRate(value) }
         .onChange(of: muted) { _, value in playback.player?.isMuted = value }
-        .onChange(of: active) { _, value in if !value { playback.stop(); url = nil } }
+        .onChange(of: active) { _, value in if !value { url = nil } }
         .onChange(of: scenePhase) { _, phase in if phase != .active && item.isEncrypted { playback.stop(); url = nil } }
-        .onDisappear { playback.stop() }
+        // Native fullscreen temporarily hides this SwiftUI page. The library owns
+        // playback and cleans up only when the media viewer actually dismisses.
+        #if DEBUG
+        .overlay(alignment: .topLeading) {
+            if active && item.kind != .image && ProcessInfo.processInfo.arguments.contains("-media-ui-fixtures") {
+                Text("\(playback.sessionID.uuidString)|\(playback.elapsed)|\(playback.player?.rate ?? 0)")
+                    .font(.caption2).accessibilityIdentifier("playbackProbe")
+            }
+        }
+        #endif
     }
 }
 
 @MainActor
-private final class PlaybackModel: ObservableObject {
+final class PlaybackModel: ObservableObject {
     @Published var player: AVPlayer?
     @Published var error: String?
+    @Published var isFullScreen = false
+    @Published private(set) var elapsed = 0.0
+    private(set) var sessionID = UUID()
+    private(set) var mediaID: String?
+    private var sourceURL: URL?
     private var endObserver: NSObjectProtocol?
     private var status: NSKeyValueObservation?
     private var periodic: Any?
     private var savedID: String?
     func open(_ url: URL, item: MediaItem, rate: Float, muted: Bool, ended: @escaping @MainActor @Sendable () -> Void) {
+        if mediaID == item.id, sourceURL == url, player?.currentItem != nil {
+            player?.isMuted = muted; setRate(rate)
+            return
+        }
         stop(); error = nil
+        mediaID = item.id; sourceURL = url; sessionID = UUID()
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
         try? AVAudioSession.sharedInstance().setActive(true)
         let current = AVPlayerItem(url: url)
@@ -158,14 +204,20 @@ private final class PlaybackModel: ObservableObject {
         status = current.observe(\.status, options: [.new]) { [weak self] item, _ in
             if item.status == .failed { Task { @MainActor in self?.error = item.error?.localizedDescription ?? "iOS 不支持此媒体格式" } }
         }
+        let session = sessionID
         endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: current, queue: .main) { [weak self] _ in
             Task { @MainActor in
-                if let id = self?.savedID { UserDefaults.standard.removeObject(forKey: "playback.\(id)") }
+                guard let self, self.sessionID == session, self.mediaID == item.id else { return }
+                if let id = self.savedID { UserDefaults.standard.removeObject(forKey: "playback.\(id)") }
                 ended()
             }
         }
-        periodic = next.addPeriodicTimeObserver(forInterval: CMTime(seconds: 3, preferredTimescale: 600), queue: .main) { [weak self] time in
-            Task { @MainActor in if let id = self?.savedID, time.seconds.isFinite { UserDefaults.standard.set(time.seconds, forKey: "playback.\(id)") } }
+        periodic = next.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.5, preferredTimescale: 600), queue: .main) { [weak self] time in
+            Task { @MainActor in
+                guard let self, self.sessionID == session, self.mediaID == item.id, time.seconds.isFinite else { return }
+                self.elapsed = time.seconds
+                if let id = self.savedID, Int(time.seconds) % 3 == 0 { UserDefaults.standard.set(time.seconds, forKey: "playback.\(id)") }
+            }
         }
         next.playImmediately(atRate: rate)
     }
@@ -174,27 +226,51 @@ private final class PlaybackModel: ObservableObject {
         player?.pause()
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }; endObserver = nil
         if let periodic { player?.removeTimeObserver(periodic) }; periodic = nil
-        status = nil; player?.replaceCurrentItem(with: nil); player = nil; savedID = nil
+        error = nil
+        status = nil; player?.replaceCurrentItem(with: nil); player = nil; savedID = nil; mediaID = nil; sourceURL = nil; elapsed = 0; isFullScreen = false
     }
 }
 
-private struct NativePlayer: UIViewControllerRepresentable {
-    let player: AVPlayer?
+struct NativePlayer: UIViewControllerRepresentable {
+    @ObservedObject var playback: PlaybackModel
     let allowBackground: Bool
+    func makeCoordinator() -> Coordinator { Coordinator(playback: playback) }
     func makeUIViewController(context: Context) -> AVPlayerViewController {
         let controller = AVPlayerViewController()
+        controller.delegate = context.coordinator
         controller.showsPlaybackControls = true
         controller.allowsPictureInPicturePlayback = allowBackground
         controller.canStartPictureInPictureAutomaticallyFromInline = allowBackground
-        controller.player = player
+        controller.player = playback.player
         return controller
     }
-    func updateUIViewController(_ controller: AVPlayerViewController, context: Context) { controller.player = player; controller.allowsPictureInPicturePlayback = allowBackground }
-    static func dismantleUIViewController(_ controller: AVPlayerViewController, coordinator: ()) { controller.player = nil }
+    func updateUIViewController(_ controller: AVPlayerViewController, context: Context) {
+        if controller.player !== playback.player { controller.player = playback.player }
+        controller.allowsPictureInPicturePlayback = allowBackground
+    }
+    static func dismantleUIViewController(_ controller: AVPlayerViewController, coordinator: Coordinator) {
+        // The system may still be using the controller for a fullscreen transition.
+        // Never clear the shared player's current item because its inline view hides.
+        if !coordinator.playback.isFullScreen { controller.player = nil }
+    }
+    @MainActor final class Coordinator: NSObject, @preconcurrency AVPlayerViewControllerDelegate {
+        let playback: PlaybackModel
+        init(playback: PlaybackModel) { self.playback = playback }
+        func playerViewController(_ playerViewController: AVPlayerViewController, willBeginFullScreenPresentationWithAnimationCoordinator coordinator: UIViewControllerTransitionCoordinator) {
+            playback.isFullScreen = true
+            coordinator.animate(alongsideTransition: nil) { [weak self] context in
+                let cancelled = context.isCancelled
+                Task { @MainActor in if cancelled { self?.playback.isFullScreen = false } }
+            }
+        }
+        func playerViewController(_ playerViewController: AVPlayerViewController, willEndFullScreenPresentationWithAnimationCoordinator coordinator: UIViewControllerTransitionCoordinator) {
+            coordinator.animate(alongsideTransition: nil) { [weak self] _ in Task { @MainActor in self?.playback.isFullScreen = false } }
+        }
+    }
 }
 
 /// Native scrolling and pinch zoom keep tall images readable at screen width.
-private struct ZoomableImage: UIViewRepresentable {
+struct ZoomableImage: UIViewRepresentable {
     let url: URL
     let longMode: Bool
     func makeUIView(context: Context) -> ImageScrollView { ImageScrollView() }
@@ -252,7 +328,7 @@ private struct ZoomableImage: UIViewRepresentable {
     }
 }
 
-private enum ImageDecoder {
+enum ImageDecoder {
     static func decode(_ url: URL) -> UIImage? {
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
         let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]

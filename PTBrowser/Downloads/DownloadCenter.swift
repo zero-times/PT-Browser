@@ -4,7 +4,10 @@ import AVFoundation
 import UIKit
 
 struct DownloadJob: Codable, Identifiable {
-    enum State: String, Codable { case preparing, running, paused, verifying, completed, failed, cancelled }
+    enum State: String, Codable {
+        case preparing, running, paused, verifying, completed, failed, cancelled
+        var isHistory: Bool { self == .completed || self == .failed || self == .cancelled }
+    }
     var id: UUID
     var url: URL
     var name: String
@@ -41,16 +44,22 @@ final class DownloadCenter: NSObject, ObservableObject, @preconcurrency URLSessi
     private var finalizing = Set<UUID>()
     private let injectedConfiguration: URLSessionConfiguration?
     private let injectedSupport: URL?
+    private var sessionSuffix: String {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-uitesting") { return ".uitesting" }
+        #endif
+        return ""
+    }
     private var restoredSessions = 0
     private var restoringIDs = Set<UUID>()
     private lazy var plainSession: URLSession = {
-        let config = injectedConfiguration ?? URLSessionConfiguration.background(withIdentifier: Bundle.main.bundleIdentifier! + ".media-downloads")
+        let config = injectedConfiguration ?? URLSessionConfiguration.background(withIdentifier: Bundle.main.bundleIdentifier! + ".media-downloads" + sessionSuffix)
         config.httpMaximumConnectionsPerHost = 3
         if config.identifier != nil { config.sessionSendsLaunchEvents = true }
         return URLSession(configuration: config, delegate: self, delegateQueue: .main)
     }()
     private lazy var hlsSession: AVAssetDownloadURLSession = {
-        let config = URLSessionConfiguration.background(withIdentifier: Bundle.main.bundleIdentifier! + ".hls-downloads")
+        let config = URLSessionConfiguration.background(withIdentifier: Bundle.main.bundleIdentifier! + ".hls-downloads" + sessionSuffix)
         config.sessionSendsLaunchEvents = true
         return AVAssetDownloadURLSession(configuration: config, assetDownloadDelegate: self, delegateQueue: .main)
     }()
@@ -59,10 +68,23 @@ final class DownloadCenter: NSObject, ObservableObject, @preconcurrency URLSessi
 
     init(configuration: URLSessionConfiguration? = nil, storageDirectory: URL? = nil) {
         injectedConfiguration = configuration
+        #if DEBUG
+        if storageDirectory == nil && configuration == nil && ProcessInfo.processInfo.arguments.contains("-uitesting") {
+            let disposable = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("UITestDownloads", isDirectory: true)
+            try? FileManager.default.removeItem(at: disposable)
+            injectedSupport = disposable
+        } else { injectedSupport = storageDirectory }
+        #else
         injectedSupport = storageDirectory
+        #endif
         super.init()
         try? fm.createDirectory(at: support, withIntermediateDirectories: true)
         if let data = try? Data(contentsOf: stateFile), let saved = try? JSONDecoder().decode([DownloadJob].self, from: data) { jobs = saved }
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-uitesting") && ProcessInfo.processInfo.arguments.contains("-history-ui-fixtures") {
+            jobs = UITestMediaFixtures.downloadHistory(); save()
+        }
+        #endif
         plainSession.getAllTasks { [weak self] tasks in Task { @MainActor in self?.restore(tasks) } }
         if configuration == nil { hlsSession.getAllTasks { [weak self] tasks in Task { @MainActor in self?.restore(tasks) } } }
         else { restore([]) }
@@ -174,6 +196,24 @@ final class DownloadCenter: NSObject, ObservableObject, @preconcurrency URLSessi
         save()
     }
     func remove(_ id: UUID) { cancel(id); jobs.removeAll { $0.id == id && $0.state != .verifying }; save() }
+    var canClearHistory: Bool { jobs.contains { $0.state.isHistory } }
+
+    func clearHistory() {
+        let history = jobs.filter { $0.state.isHistory }
+        guard !history.isEmpty else { return }
+        // Remove records before cancelling tasks so late delegate callbacks cannot re-import them.
+        jobs.removeAll { $0.state.isHistory }
+        for job in history {
+            tasks.removeValue(forKey: job.id)?.cancel()
+            expectedPauses.remove(job.id)
+            if let incoming = job.incoming,
+               (try? LibraryPaths.relativePath(of: incoming, inside: support)) != nil {
+                try? fm.removeItem(at: incoming)
+            }
+        }
+        save()
+    }
+
     private func fail(_ id: UUID, _ text: String) {
         guard let index = jobs.firstIndex(where: { $0.id == id }), jobs[index].state != .cancelled else { return }
         jobs[index].state = .failed; jobs[index].message = text; save()

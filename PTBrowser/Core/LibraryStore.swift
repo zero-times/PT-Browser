@@ -32,6 +32,9 @@ final class LibraryStore: ObservableObject {
             }
         }
         try? fm.createDirectory(at: selected, withIntermediateDirectories: true)
+        #if DEBUG
+        if isTesting && ProcessInfo.processInfo.arguments.contains("-media-ui-fixtures") { try? UITestMediaFixtures.seed(selected) }
+        #endif
         root = selected
         repository = LibraryRepository(root: selected)
         Task { await refresh() }
