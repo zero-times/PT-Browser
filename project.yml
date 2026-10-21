@@ -1,0 +1,47 @@
+name: PTBrowser
+options:
+  bundleIdPrefix: com.hoai
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: 96P5S5A5C3
+    PRODUCT_BUNDLE_IDENTIFIER: com.hoai.ptbrowser
+    TARGETED_DEVICE_FAMILY: "1,2"
+    CODE_SIGN_STYLE: Automatic
+    INFOPLIST_FILE: PTBrowser/Resources/Info.plist
+    MARKETING_VERSION: 1.0.2
+    CURRENT_PROJECT_VERSION: 3
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    SWIFT_STRICT_CONCURRENCY: targeted
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+targets:
+  PTBrowser:
+    type: application
+    platform: iOS
+    sources: [PTBrowser]
+    scheme:
+      testTargets: [PTBrowserTests, PTBrowserUITests]
+  PTBrowserTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [PTBrowserTests]
+    dependencies:
+      - target: PTBrowser
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: ""
+        PRODUCT_BUNDLE_IDENTIFIER: com.hoai.ptbrowser.tests
+  PTBrowserUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [PTBrowserUITests]
+    dependencies:
+      - target: PTBrowser
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: ""
+        PRODUCT_BUNDLE_IDENTIFIER: com.hoai.ptbrowser.uitests
