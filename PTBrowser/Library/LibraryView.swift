@@ -9,6 +9,8 @@ struct LibraryView: View {
     @State private var favoritesOnly = false
     @State private var newestFirst = true
     @State private var listMode = false
+    @State private var hiddenType = LibraryMediaFilter.all
+    @State private var dateGrouped = false
     @State private var importing = false
     @State private var pickingFolder = false
     @State private var vaultSheet = false
@@ -27,10 +29,13 @@ struct LibraryView: View {
     @State private var detail: String?
     private var filtered: [MediaItem] {
         library.snapshot.items.filter { item in
-            let category = scope == 3 ? item.isEncrypted : !item.isEncrypted && (scope == 0 || scope == 1 && item.kind == .image || scope == 2 && item.kind != .image)
+            let category = scope == 3 ? item.isEncrypted && hiddenType.includes(item) : !item.isEncrypted && (scope == 0 || scope == 1 && item.kind == .image || scope == 2 && item.kind != .image)
             return category && (!favoritesOnly || item.favorite) && (folder.isEmpty || item.folder == folder) && (query.isEmpty || item.name.localizedCaseInsensitiveContains(query))
         }.sorted { newestFirst ? $0.created > $1.created : $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
+    private var dateSections: [LibraryDateGroup] { LibraryDateGroup.sections(filtered) }
+    private var displayItems: [MediaItem] { dateGrouped ? dateSections.flatMap(\.items) : filtered }
+    private var hasFilters: Bool { !query.isEmpty || favoritesOnly || !folder.isEmpty || (scope == 3 && hiddenType != .all) }
     private var selectedItems: [MediaItem] { filtered.filter { selected.contains($0.id) } }
     var body: some View {
         NavigationStack {
@@ -41,6 +46,11 @@ struct LibraryView: View {
                     Picker("媒体分类", selection: $scope) {
                         Text("全部").tag(0); Text("图片").tag(1); Text("影音").tag(2); Text("隐藏").tag(3)
                     }.pickerStyle(.segmented)
+                    if scope == 3 && library.snapshot.unlocked {
+                        Picker("隐藏媒体类型", selection: $hiddenType) {
+                            ForEach(LibraryMediaFilter.allCases) { type in Text(type.title).tag(type) }
+                        }.pickerStyle(.segmented).accessibilityIdentifier("hiddenMediaType")
+                    }
                     HStack {
                         Menu {
                             Button("全部文件夹") { folder = "" }
@@ -52,12 +62,12 @@ struct LibraryView: View {
                             Toggle("仅看收藏", isOn: $favoritesOnly)
                             Toggle("按最新排序", isOn: $newestFirst)
                             Toggle("列表视图", isOn: $listMode)
+                            Toggle("按日期分组", isOn: $dateGrouped).accessibilityIdentifier("groupMediaByDate")
                         } label: { Image(systemName: "line.3.horizontal.decrease").frame(width: 44, height: 44) }.accessibilityLabel("筛选与排序")
                     }.font(.subheadline)
                     if scope == 3 && !library.snapshot.unlocked { lockedState }
                     else if filtered.isEmpty { emptyState }
-                    else if listMode { mediaList }
-                    else { mediaGrid }
+                    else { mediaContent }
                 }.padding(.horizontal, 20).padding(.bottom, 24)
             }
             .background(Color(.systemGroupedBackground))
@@ -106,6 +116,10 @@ struct LibraryView: View {
             } message: { Text("文件将从所选 Files 文件夹中删除，此操作无法撤销。") }
             .alert("文件校验", isPresented: Binding(get: { detail != nil }, set: { if !$0 { detail = nil } })) { Button("好") { detail = nil } } message: { Text(detail ?? "") }
             .onChange(of: scope) { _, _ in selected.removeAll(); folder = "" }
+            .onChange(of: hiddenType) { _, _ in selected.removeAll() }
+            .onChange(of: query) { _, _ in selected.formIntersection(Set(filtered.map(\.id))) }
+            .onChange(of: folder) { _, _ in selected.removeAll() }
+            .onChange(of: favoritesOnly) { _, _ in selected.formIntersection(Set(filtered.map(\.id))) }
             .onChange(of: library.generation) { _, _ in viewerPlayback.stop(); viewer = nil; selected.removeAll(); shareURLs = []; sharing = false; detail = nil; editing = nil; moving = []; deleting = [] }
         }
     }
@@ -141,16 +155,36 @@ struct LibraryView: View {
     }
     private var emptyState: some View {
         ContentUnavailableView {
-            Label(query.isEmpty ? "收藏从这里开始" : "没有匹配的媒体", systemImage: query.isEmpty ? "photo.stack" : "magnifyingglass")
+            Label(hasFilters ? "没有匹配的媒体" : "收藏从这里开始", systemImage: hasFilters ? "magnifyingglass" : "photo.stack")
         } description: {
-            Text(scope == 3 ? "在普通库长按媒体，选择「加密并隐藏」。" : "从 Files 导入，或到浏览器发现网页中的图片与视频。")
+            Text(hasFilters ? "试试切换媒体类型、文件夹或取消筛选。" : scope == 3 ? "在普通库长按媒体，选择「加密并隐藏」。" : "从 Files 导入，或到浏览器发现网页中的图片与视频。")
         } actions: {
-            if scope != 3 && query.isEmpty { Button("从 Files 导入") { importing = true }.buttonStyle(.bordered) }
+            if hasFilters {
+                Button("清除筛选") { query = ""; folder = ""; favoritesOnly = false; hiddenType = .all; selected.removeAll() }.buttonStyle(.bordered)
+            } else if scope != 3 { Button("从 Files 导入") { importing = true }.buttonStyle(.bordered) }
         }.padding(.vertical, 16)
     }
-    private var mediaGrid: some View {
+    @ViewBuilder private var mediaContent: some View {
+        if dateGrouped {
+            LazyVStack(alignment: .leading, spacing: 20) {
+                ForEach(dateSections) { group in
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text(group.day, format: .dateTime.year().month().day()).font(.headline)
+                                .accessibilityIdentifier("mediaDateHeading")
+                            Spacer()
+                            Text("\(group.items.count) 项").font(.caption).foregroundStyle(.secondary)
+                        }
+                        if listMode { mediaList(group.items) } else { mediaGrid(group.items) }
+                    }
+                }
+            }
+        } else if listMode { mediaList(filtered) }
+        else { mediaGrid(filtered) }
+    }
+    private func mediaGrid(_ items: [MediaItem]) -> some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 8)], spacing: 14) {
-            ForEach(filtered) { item in
+            ForEach(items) { item in
                 Button { activate(item) } label: {
                     VStack(alignment: .leading, spacing: 6) {
                         MediaThumbnail(item: item).aspectRatio(1, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 14))
@@ -158,14 +192,16 @@ struct LibraryView: View {
                         Text(item.name).font(.caption).lineLimit(1).foregroundStyle(.primary)
                         Text(item.byteLabel).font(.caption2).foregroundStyle(.secondary)
                     }
-                }.buttonStyle(.plain).accessibilityLabel("\(item.name)，\(item.kind.title)，\(item.byteLabel)")
+                }.buttonStyle(.plain).contentShape(Rectangle())
+                    .accessibilityIdentifier("mediaItem-\(item.name)")
+                    .accessibilityLabel("\(item.name)，\(item.kind.title)，\(item.byteLabel)")
                     .contextMenu { actions(item) }
             }
         }
     }
-    private var mediaList: some View {
+    private func mediaList(_ items: [MediaItem]) -> some View {
         LazyVStack(spacing: 8) {
-            ForEach(filtered) { item in
+            ForEach(items) { item in
                 HStack(spacing: 12) {
                     Button { activate(item) } label: {
                         HStack(spacing: 12) {
@@ -174,7 +210,9 @@ struct LibraryView: View {
                             Spacer()
                             if selectionMode { selectionMark(item) }
                         }
-                    }.buttonStyle(.plain)
+                    }.buttonStyle(.plain).contentShape(Rectangle())
+                        .accessibilityIdentifier("mediaItem-\(item.name)")
+                        .accessibilityLabel("\(item.name)，\(item.kind.title)，\(item.byteLabel)")
                     if !selectionMode { Menu { actions(item) } label: { Image(systemName: "ellipsis").frame(width: 44, height: 44) }.accessibilityLabel("\(item.name)的操作") }
                 }.padding(8).background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
             }
@@ -183,7 +221,7 @@ struct LibraryView: View {
     private func selectionMark(_ item: MediaItem) -> some View { Image(systemName: selected.contains(item.id) ? "checkmark.circle.fill" : "circle").font(.title2).symbolRenderingMode(.palette).foregroundStyle(.white, .teal).shadow(radius: 2) }
     private func activate(_ item: MediaItem) {
         if selectionMode { if !selected.insert(item.id).inserted { selected.remove(item.id) } }
-        else { viewer = ViewerSelection(items: filtered, id: item.id) }
+        else { viewer = ViewerSelection(items: displayItems, id: item.id) }
     }
     @ViewBuilder private func actions(_ item: MediaItem) -> some View {
         Button { activate(item) } label: { Label("打开", systemImage: item.kind.icon) }

@@ -19,6 +19,36 @@ import UIKit
             // Stable ordering allows the continuous-reader test to begin with Image-1.
             try FileManager.default.setAttributes([.creationDate: Date(timeIntervalSince1970: TimeInterval(1000 - index))], ofItemAtPath: file.path)
         }
+        if ProcessInfo.processInfo.arguments.contains("-library-ui-fixtures") {
+            for name in ["Wide-1.png", "Wide-2.png", "Hidden-Wide.png", "Hidden-Tall.png"] {
+                let size = CGSize(width: 1600, height: name.contains("Tall") ? 4800 : 160)
+                let data = UIGraphicsImageRenderer(size: size).pngData { context in
+                    UIColor.systemOrange.setFill(); context.fill(CGRect(origin: .zero, size: size))
+                    UIColor.systemBlue.setFill(); context.fill(CGRect(x: 720, y: 0, width: 160, height: size.height))
+                }
+                try data.write(to: root.appendingPathComponent(name))
+            }
+            let video = root.appendingPathComponent("Fullscreen-Test.mp4")
+            if FileManager.default.fileExists(atPath: video.path) {
+                try FileManager.default.copyItem(at: video, to: root.appendingPathComponent("Hidden-Video.mp4"))
+            }
+            var audio = Data("RIFF".utf8)
+            func append(_ value: UInt32, bytes: Int) { for shift in 0..<bytes { audio.append(UInt8((value >> (shift * 8)) & 255)) } }
+            append(836, bytes: 4); audio.append(Data("WAVEfmt ".utf8))
+            append(16, bytes: 4); append(1, bytes: 2); append(1, bytes: 2)
+            append(8000, bytes: 4); append(8000, bytes: 4); append(1, bytes: 2); append(8, bytes: 2)
+            audio.append(Data("data".utf8)); append(800, bytes: 4); audio.append(Data(repeating: 128, count: 800))
+            try audio.write(to: root.appendingPathComponent("Hidden-Audio.wav"))
+            for (name, seconds) in [("Wide-1.png", 1792627202.0), ("Wide-2.png", 1792627201),
+                                    ("Hidden-Wide.png", 1792540800), ("Hidden-Video.mp4", 1792540800),
+                                    ("Hidden-Tall.png", 1792454400), ("Hidden-Audio.wav", 1792368000)] {
+                try FileManager.default.setAttributes([.creationDate: Date(timeIntervalSince1970: seconds)], ofItemAtPath: root.appendingPathComponent(name).path)
+            }
+        }
+    }
+    static func seedVault(_ repository: LibraryRepository) async throws {
+        try await repository.createVault(password: "ui-password-123")
+        for item in try await repository.snapshot().items where item.name.hasPrefix("Hidden-") { try await repository.encrypt(item) }
     }
     static func downloadHistory() -> [DownloadJob] {
         [.completed, .failed, .paused].map { state in

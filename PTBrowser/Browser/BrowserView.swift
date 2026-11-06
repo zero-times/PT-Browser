@@ -135,8 +135,12 @@ struct SnifferSheet: View {
                 Section {
                     Picker("类型", selection: $kind) { Text("全部").tag("all"); Text("图片").tag("image"); Text("视频").tag("video"); Text("音频").tag("audio") }.pickerStyle(.segmented)
                     Toggle("过滤宽度小于 300px 的已知小图", isOn: $minWidth).font(.caption)
-                    Text("发现 \(items.count) 项 · 下载会携带当前网页的登录 Cookie 与来源信息。先保存为普通媒体，之后可在媒体库加密。")
+                    Text("发现 \(items.count) 项 · 可直接保存的源视频排在前面。下载会携带当前网页的登录 Cookie 与来源信息。")
                         .font(.caption).foregroundStyle(.secondary)
+                    if items.contains(where: { $0.streamEncrypted }) {
+                        Label("加密视频依赖网页下发的密钥，几天后可能失效，届时将无法查看。请优先下载并保存。", systemImage: "lock.trianglebadge.exclamationmark")
+                            .font(.caption).foregroundStyle(.orange)
+                    }
                 }
                 if items.isEmpty { ContentUnavailableView("暂未发现媒体", systemImage: "waveform.path.ecg", description: Text("播放视频、滚动网页，或重新扫描。内存 Blob、DRM 和网站自有协议不一定可下载。")) }
                 ForEach(items) { item in
@@ -144,7 +148,10 @@ struct SnifferSheet: View {
                         Button { if !selected.insert(item.id).inserted { selected.remove(item.id) } } label: { Image(systemName: selected.contains(item.id) ? "checkmark.circle.fill" : "circle").font(.title2).frame(width: 44, height: 44) }.buttonStyle(.borderless).accessibilityLabel("选择\(item.name)")
                         VStack(alignment: .leading, spacing: 6) {
                             Label(item.name, systemImage: item.kind.icon).font(.subheadline).lineLimit(2)
-                            Text("\(item.isHLS ? "HLS 离线包" : item.kind.title) · \(item.width > 0 ? "\(item.width) × \(item.height) · " : "")\(item.source)").font(.caption).foregroundStyle(.secondary)
+                            Text("\(item.deliveryLabel) · \(item.width > 0 ? "\(item.width) × \(item.height) · " : "")\(item.source)").font(.caption).foregroundStyle(.secondary)
+                            if let warning = item.protectionWarning {
+                                Text(warning).font(.caption2).foregroundStyle(.orange).fixedSize(horizontal: false, vertical: true)
+                            }
                             Text(item.url.host ?? "").font(.caption2).foregroundStyle(.secondary)
                         }
                         Spacer(minLength: 0)

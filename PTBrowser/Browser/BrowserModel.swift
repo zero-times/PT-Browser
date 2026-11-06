@@ -12,10 +12,40 @@ struct MediaCandidate: Identifiable, Hashable, Sendable {
     var mediaTitle: String?
     var pageTitle: String?
     var titlePriority: Int = 0
+    var streamEncrypted = false
+    var protectionNote: String?
     var preferredTitle: String? { MediaNaming.title(mediaTitle) ?? MediaNaming.title(pageTitle) }
     var id: String { url.absoluteString }
     var name: String { preferredTitle ?? (url.lastPathComponent.isEmpty ? "媒体资源" : url.lastPathComponent) }
     var isHLS: Bool { url.pathExtension.lowercased() == "m3u8" || mime?.lowercased().contains("mpegurl") == true }
+    /// A single playable file such as MP4 or WebM, rather than an adaptive playlist or media segment.
+    var isDirectVideoFile: Bool {
+        guard kind == .video, !isHLS else { return false }
+        let ext = url.pathExtension.lowercased()
+        if ["mp4", "m4v", "mov", "webm", "mkv", "avi"].contains(ext) { return true }
+        let type = mime?.lowercased() ?? ""
+        return type.contains("video/mp4") || type.contains("video/webm") || type.contains("video/quicktime") || type.contains("video/x-m4v") || type.contains("video/x-matroska")
+    }
+    var isSourceOfflineVideo: Bool { isDirectVideoFile && !streamEncrypted }
+    /// Source files that can be saved as-is come first. Encrypted streams stay visible, after clear videos.
+    var sniffRank: Int {
+        if isSourceOfflineVideo { return 0 }
+        if kind == .video && !streamEncrypted { return 1 }
+        if kind == .video { return 2 }
+        return 3
+    }
+    var protectionWarning: String? {
+        guard streamEncrypted else { return nil }
+        if let protectionNote, !protectionNote.isEmpty { return protectionNote }
+        return "此视频经过加密，密钥过期后可能无法再查看，请尽快下载保存。"
+    }
+    var deliveryLabel: String {
+        if isSourceOfflineVideo { return "源视频" }
+        if streamEncrypted && isHLS { return "加密 HLS" }
+        if streamEncrypted { return "加密\(kind.title)" }
+        if isHLS { return "HLS 离线包" }
+        return kind.title
+    }
 }
 
 struct WebLink: Codable, Identifiable {
@@ -98,8 +128,10 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
         for record in batch.prefix(200) {
             guard let raw = record["url"] as? String, raw.count < 16000, let url = URL(string: raw), ["http", "https"].contains(url.scheme),
                   let kind = (record["kind"] as? String).flatMap(MediaKind.init(rawValue:)) ?? MediaKind.detect(url, mime: record["mime"] as? String) else { continue }
+            let note = (record["protection"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
             let item = MediaCandidate(url: url, kind: kind, source: record["source"] as? String ?? "网页", page: (record["page"] as? String).flatMap(URL.init(string:)) ?? webView.url,
-                                      width: record["width"] as? Int ?? 0, height: record["height"] as? Int ?? 0, mime: record["mime"] as? String, mediaTitle: MediaNaming.title(record["title"] as? String), pageTitle: MediaNaming.title(record["pageTitle"] as? String), titlePriority: min(100, max(0, record["titlePriority"] as? Int ?? 0)))
+                                      width: record["width"] as? Int ?? 0, height: record["height"] as? Int ?? 0, mime: record["mime"] as? String, mediaTitle: MediaNaming.title(record["title"] as? String), pageTitle: MediaNaming.title(record["pageTitle"] as? String), titlePriority: min(100, max(0, record["titlePriority"] as? Int ?? 0)),
+                                      streamEncrypted: record["encrypted"] as? Bool ?? false, protectionNote: note?.isEmpty == false ? String(note!.prefix(180)) : nil)
             merge(item)
         }
     }
@@ -114,8 +146,18 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
             updated.pageTitle = updated.pageTitle ?? previous.pageTitle
             updated.width = max(updated.width, previous.width); updated.height = max(updated.height, previous.height)
             if updated.mime?.isEmpty != false { updated.mime = previous.mime }
+            updated.streamEncrypted = updated.streamEncrypted || previous.streamEncrypted
+            if updated.protectionNote?.isEmpty != false { updated.protectionNote = previous.protectionNote }
             candidates[index] = updated
         } else if candidates.count < 2000 { candidates.append(item) }
+        sortForSniffing()
+    }
+
+    private func sortForSniffing() {
+        candidates = candidates.enumerated().sorted { lhs, rhs in
+            if lhs.element.sniffRank != rhs.element.sniffRank { return lhs.element.sniffRank < rhs.element.sniffRank }
+            return lhs.offset < rhs.offset
+        }.map(\.element)
     }
 
     private func addResponse(_ response: URLResponse) {
@@ -145,7 +187,7 @@ final class BrowserTab: NSObject, ObservableObject, Identifiable, WKNavigationDe
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard let url = navigationAction.request.url else { decisionHandler(.cancel); return }
         if navigationAction.shouldPerformDownload {
-            if let kind = MediaKind.detect(url) { candidates.append(MediaCandidate(url: url, kind: kind, source: "下载链接", page: webView.url, pageTitle: MediaNaming.title(webView.title))) }
+            if let kind = MediaKind.detect(url) { merge(MediaCandidate(url: url, kind: kind, source: "下载链接", page: webView.url, pageTitle: MediaNaming.title(webView.title))) }
             error = "请在嗅探列表确认下载，或粘贴资源地址到下载页"
             decisionHandler(.cancel); return
         }

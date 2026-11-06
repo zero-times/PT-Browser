@@ -25,21 +25,19 @@ struct MediaThumbnail: View {
     let item: MediaItem
     @State private var image: UIImage?
     var body: some View {
-        ZStack {
-            Color(.tertiarySystemFill)
-            if let image { Image(uiImage: image).resizable().scaledToFill() }
-            else { Image(systemName: item.kind.icon).font(.largeTitle).foregroundStyle(.secondary) }
-            VStack {
-                HStack {
-                    if item.favorite { Image(systemName: "heart.fill").foregroundStyle(.white).shadow(radius: 2) }
-                    Spacer()
-                    if item.isEncrypted { Image(systemName: "lock.fill").foregroundStyle(.white).shadow(radius: 2) }
-                }
-                Spacer()
-                if item.kind != .image { HStack { Image(systemName: item.kind.icon); Spacer(); Text(item.byteLabel) }.font(.caption2).foregroundStyle(.white).padding(6).background(.black.opacity(0.5)) }
-            }.padding(8)
+        GeometryReader { geometry in
+            ZStack {
+                Color(.tertiarySystemFill)
+                if let image {
+                    Image(uiImage: image).resizable().scaledToFill()
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                } else { Image(systemName: item.kind.icon).font(.largeTitle).foregroundStyle(.secondary) }
+                badges
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .clipped()
+            .contentShape(Rectangle())
         }
-        .clipped()
         .task(id: "\(library.generation)-\(item.id)") {
             image = nil
             let repository = library.repository
@@ -50,5 +48,16 @@ struct MediaThumbnail: View {
             }
         }
         .accessibilityHidden(true)
+    }
+    private var badges: some View {
+        VStack {
+            HStack {
+                if item.favorite { Image(systemName: "heart.fill").foregroundStyle(.white).shadow(radius: 2) }
+                Spacer()
+                if item.isEncrypted { Image(systemName: "lock.fill").foregroundStyle(.white).shadow(radius: 2) }
+            }
+            Spacer()
+            if item.kind != .image { HStack { Image(systemName: item.kind.icon); Spacer(); Text(item.byteLabel) }.font(.caption2).foregroundStyle(.white).padding(6).background(.black.opacity(0.5)) }
+        }.padding(8)
     }
 }

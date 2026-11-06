@@ -59,5 +59,22 @@ import WebKit
         XCTAssertEqual(tab.candidates.first { $0.url.lastPathComponent == "hash-a.jpg" }?.width, 1200)
         tab.webView.stopLoading()
     }
+    func testSourceOfflineVideosLeadAndEncryptedStreamsStayVisible() {
+        let tab = BrowserTab(isPrivate: true)
+        tab.receive([
+            ["url": "https://example.com/poster.jpg", "kind": "image"],
+            ["url": "https://example.com/master.m3u8", "kind": "video"],
+            ["url": "https://example.com/clip.mp4", "kind": "video"],
+            ["url": "https://example.com/segment.ts", "kind": "video"],
+            ["url": "https://example.com/protected.mp4", "kind": "video", "encrypted": true, "protection": "网页已绑定 DRM 密钥，过期后可能无法再查看，请尽快下载。"]
+        ])
+        XCTAssertEqual(tab.candidates.map(\.url.lastPathComponent), ["clip.mp4", "master.m3u8", "segment.ts", "protected.mp4", "poster.jpg"])
+        XCTAssertTrue(tab.candidates[0].isSourceOfflineVideo)
+        XCTAssertEqual(tab.candidates[3].protectionWarning, "网页已绑定 DRM 密钥，过期后可能无法再查看，请尽快下载。")
+        XCTAssertEqual(tab.candidates[3].deliveryLabel, "加密视频")
+        tab.receive([["url": "https://example.com/master.m3u8", "kind": "video", "encrypted": true, "protection": "HLS 使用 AES-128 加密，密钥过期后可能无法再查看，请尽快下载。"]])
+        XCTAssertEqual(tab.candidates.map(\.url.lastPathComponent), ["clip.mp4", "segment.ts", "master.m3u8", "protected.mp4", "poster.jpg"])
+        XCTAssertTrue(tab.candidates[2].streamEncrypted)
+    }
 
 }

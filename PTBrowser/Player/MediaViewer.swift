@@ -329,7 +329,7 @@ struct ZoomableImage: UIViewRepresentable {
 }
 
 enum ImageDecoder {
-    static func decode(_ url: URL) -> UIImage? {
+    static func decode(_ url: URL, targetPixelWidth: CGFloat? = nil) -> UIImage? {
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
         let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
         let width = properties?[kCGImagePropertyPixelWidth] as? Double ?? 1
@@ -337,12 +337,16 @@ enum ImageDecoder {
         let count = CGImageSourceGetCount(source)
         let frames = count > 1 && count <= 150 ? count : 1
         // Limit total decoded pixels to 24 MP; keep originals intact for export.
-        let scale = min(1, sqrt(24_000_000 / max(1, width * height * Double(frames))))
+        let orientation = properties?[kCGImagePropertyOrientation] as? Int ?? 1
+        let displayWidth = orientation >= 5 ? height : width
+        let widthScale = targetPixelWidth.map { Double($0) / max(1, displayWidth) } ?? 1
+        let scale = min(1, widthScale, sqrt(24_000_000 / max(1, width * height * Double(frames))))
         let maxSize = min(24_000, max(width, height) * scale)
-        let options: CFDictionary = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceCreateThumbnailWithTransform: true, kCGImageSourceThumbnailMaxPixelSize: maxSize] as CFDictionary
+        let options: CFDictionary = [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceCreateThumbnailWithTransform: true, kCGImageSourceThumbnailMaxPixelSize: maxSize, kCGImageSourceShouldCacheImmediately: true] as CFDictionary
         var images: [UIImage] = []
         var duration = 0.0
         for index in 0..<frames {
+            guard !Task.isCancelled else { return nil }
             guard let image = CGImageSourceCreateThumbnailAtIndex(source, index, options) else { continue }
             images.append(UIImage(cgImage: image))
             let properties = CGImageSourceCopyPropertiesAtIndex(source, index, nil) as? [CFString: Any]

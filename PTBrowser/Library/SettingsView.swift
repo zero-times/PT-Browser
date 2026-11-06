@@ -40,7 +40,7 @@ struct SettingsView: View {
                 Section("关于") {
                     LabeledContent("版本", value: "\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""))")
                     LabeledContent("包名", value: Bundle.main.bundleIdentifier ?? "com.hoai.ptbrowser")
-                    Text("支持 iOS 可解码的图片、音视频与非 DRM HLS 点播离线包。网页嗅探覆盖 DOM、动态元素、srcset、Fetch、XHR 与资源性能记录。Blob、DRM、专有分片协议和防盗链资源可能无法下载。")
+                    Text("支持 iOS 可解码的图片、音视频与非 DRM HLS 点播离线包。嗅探列表会把可直接保存的源视频排在前面；加密视频会提示密钥可能过期。网页嗅探覆盖 DOM、动态元素、srcset、Fetch、XHR 与资源性能记录。Blob、DRM、专有分片协议和防盗链资源可能无法下载。")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }.navigationTitle("设置")

@@ -37,7 +37,14 @@ final class LibraryStore: ObservableObject {
         #endif
         root = selected
         repository = LibraryRepository(root: selected)
-        Task { await refresh() }
+        Task {
+            #if DEBUG
+            if isTesting && ProcessInfo.processInfo.arguments.contains("-media-ui-fixtures") && ProcessInfo.processInfo.arguments.contains("-library-ui-fixtures") {
+                do { try await UITestMediaFixtures.seedVault(repository) } catch { self.error = error.localizedDescription }
+            }
+            #endif
+            await refresh()
+        }
     }
 
     func refresh() async {

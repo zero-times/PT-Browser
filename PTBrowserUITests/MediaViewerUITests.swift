@@ -55,6 +55,22 @@ final class MediaViewerUITests: XCTestCase {
         XCTAssertTrue(list.waitForExistence(timeout: 5))
         let imageOne = app.buttons["readingImage-Image-1.png"]
         XCTAssertTrue(imageOne.waitForExistence(timeout: 10))
+        expectation(for: NSPredicate(format: "value == %@", "已加载"), evaluatedWith: imageOne)
+        waitForExpectations(timeout: 10)
+        // Drag across a boundary without lifting: row frames should move with
+        // the finger rather than snapping to an image or changing their height.
+        let second = app.buttons["readingImage-Image-2.png"]
+        XCTAssertTrue(second.waitForExistence(timeout: 10))
+        expectation(for: NSPredicate(format: "value == %@", "已加载"), evaluatedWith: second)
+        waitForExpectations(timeout: 10)
+        let initialHeight = imageOne.frame.height
+        let start = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8))
+        let end = list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.25))
+        start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.5)
+        let moved = list.frame.height * 0.55
+        XCTAssertEqual(imageOne.frame.height, initialHeight, accuracy: 1)
+        XCTAssertEqual(imageOne.frame.minY, list.frame.minY - moved, accuracy: 30)
+        XCTAssertEqual(second.frame.minY, imageOne.frame.maxY, accuracy: 1)
         var reached = false
         for _ in 0..<10 {
             if app.buttons["readingImage-Image-3.png"].isHittable { reached = true; break }
@@ -62,6 +78,16 @@ final class MediaViewerUITests: XCTestCase {
         }
         XCTAssertTrue(reached, "The same scroll view must reach subsequent images without paging")
         XCTAssertFalse(app.staticTexts["无法读取图片"].exists)
+        for _ in 0..<10 {
+            if imageOne.isHittable { break }
+            list.swipeDown()
+        }
+        XCTAssertTrue(imageOne.isHittable, "Reversing direction must return to the same continuous list")
+        XCTAssertEqual(imageOne.frame.height, initialHeight, accuracy: 1)
+        imageOne.tap()
+        XCTAssertTrue(app.buttons["完成"].waitForExistence(timeout: 5))
+        app.buttons["完成"].tap()
+        XCTAssertTrue(list.waitForExistence(timeout: 5))
         app.buttons["关闭浏览"].tap()
     }
     @MainActor func testOneTapDownloadHistoryClearKeepsSavedVideo() throws {
